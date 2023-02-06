@@ -115,7 +115,7 @@ func createDB(dbStruct *DbStruct) *DbStruct {
 				Replicas: replicas,
 				// sources/replicas 负载均衡策略
 				Policy: dbresolver.RandomPolicy{},
-			}))
+			}).SetMaxIdleConns(dbStruct.MaxIdleConns).SetMaxOpenConns(dbStruct.MaxOpenConns).SetConnMaxLifetime(time.Duration(dbStruct.ConnMaxLifetime) * time.Minute))
 		}
 
 		dbStruct.Connection = db
