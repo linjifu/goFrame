@@ -1,0 +1,25 @@
+#默认连接名称
+default: redis
+
+#连接对象
+connections:
+  redis:
+    name: test
+    host: 127.0.0.1
+    port: 6379
+    userName: root
+    password: root
+    database: 7
+    maxIdleConns: 10
+    maxOpenConns: 300
+    connMaxLifetime: 300
+  redis2:
+      name: test
+      host: 127.0.0.1
+      port: 6379
+      userName: root
+      password: root
+      database: 8
+      maxIdleConns: 10
+      maxOpenConns: 300
+      connMaxLifetime: 300

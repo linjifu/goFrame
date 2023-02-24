@@ -7,6 +7,7 @@ require (
 	github.com/go-playground/locales v0.14.1
 	github.com/go-playground/universal-translator v0.18.0
 	github.com/go-playground/validator/v10 v10.11.1
+	github.com/gomodule/redigo v1.8.9
 	github.com/spf13/viper v1.14.0
 	gorm.io/driver/mysql v1.4.5
 	gorm.io/gorm v1.24.3
