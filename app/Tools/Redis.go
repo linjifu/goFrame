@@ -4,8 +4,6 @@ import (
 	"errors"
 	"fmt"
 	"github.com/gomodule/redigo/redis"
-	"github.com/spf13/viper"
-	"os"
 	"time"
 )
 
@@ -25,44 +23,44 @@ type RedisStruct struct {
 }
 
 type Redises struct {
-	DefaultConnectionName string                  `mapstructure:"default"` //默认连接名称
+	DefaultConnectionName string                  `mapstructure:"redisDefault"` //默认连接名称
 	Redis                 *RedisStruct            //当前连接的数据
-	Connections           map[string]*RedisStruct `mapstructure:"connections"` //所有连接的数据
+	Connections           map[string]*RedisStruct `mapstructure:"redisConnections"` //所有连接的数据
 }
 
 var RedisConnection = new(Redises)
 
-func init() {
-	path, _ := os.Getwd()
-	viperModel := viper.New()
-	viperModel.SetDefault("charset", "utf8mb4")
-	//导入配置文件
-	viperModel.SetConfigType("yaml")
-	viperModel.SetConfigFile(path + "/config/redis.yml")
-	//读取配置文件
-	err := viperModel.ReadInConfig()
-	if err != nil {
-		fmt.Println()
-		panic(fmt.Errorf("读取配置文件redis数据与结构体转换失败:%s \n", err))
-	}
-	// 将读取的配置信息保存至全局变量Conf
-	if err := viperModel.Unmarshal(RedisConnection); err != nil {
-		fmt.Println()
-		panic(fmt.Errorf("配置文件redis数据与结构体转换失败:%s \n", err))
-	}
-
-	//判断默认连接是否配置
-	defaultData, ok := RedisConnection.Connections[RedisConnection.DefaultConnectionName]
-	if ok {
-		RedisConnection.Redis = RedisConnection.createRedis(defaultData)
-	}
-
-	for key, redisStruct := range RedisConnection.Connections {
-		if key != RedisConnection.DefaultConnectionName {
-			RedisConnection.Connections[key] = RedisConnection.createRedis(redisStruct)
-		}
-	}
-}
+//func init() {
+//	path, _ := os.Getwd()
+//	viperModel := viper.New()
+//	viperModel.SetDefault("charset", "utf8mb4")
+//	//导入配置文件
+//	viperModel.SetConfigType("yaml")
+//	viperModel.SetConfigFile(path + "/config/redis.yml")
+//	//读取配置文件
+//	err := viperModel.ReadInConfig()
+//	if err != nil {
+//		fmt.Println()
+//		panic(fmt.Errorf("读取配置文件redis数据与结构体转换失败:%s \n", err))
+//	}
+//	// 将读取的配置信息保存至全局变量Conf
+//	if err := viperModel.Unmarshal(RedisConnection); err != nil {
+//		fmt.Println()
+//		panic(fmt.Errorf("配置文件redis数据与结构体转换失败:%s \n", err))
+//	}
+//
+//	//判断默认连接是否配置
+//	defaultData, ok := RedisConnection.Connections[RedisConnection.DefaultConnectionName]
+//	if ok {
+//		RedisConnection.Redis = RedisConnection.createRedis(defaultData)
+//	}
+//
+//	for key, redisStruct := range RedisConnection.Connections {
+//		if key != RedisConnection.DefaultConnectionName {
+//			RedisConnection.Connections[key] = RedisConnection.createRedis(redisStruct)
+//		}
+//	}
+//}
 
 // 创建DB
 func (r *Redises) createRedis(redisStruct *RedisStruct) *RedisStruct {
@@ -84,6 +82,8 @@ func (r *Redises) createRedis(redisStruct *RedisStruct) *RedisStruct {
 	}
 
 	redisStruct.Connection = pool.Get()
+
+	fmt.Println(redisStruct.Name + "-redis链接成功")
 
 	return redisStruct
 }

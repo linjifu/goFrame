@@ -1,12 +1,11 @@
 package Tools
 
 import (
+	"errors"
 	"fmt"
-	"github.com/spf13/viper"
 	"gorm.io/driver/mysql"
 	"gorm.io/gorm"
 	"gorm.io/plugin/dbresolver"
-	"os"
 	"time"
 )
 
@@ -29,54 +28,54 @@ type DbStruct struct {
 }
 
 type Dbs struct {
-	DefaultConnectionName string               `mapstructure:"default"` //默认连接名称
+	DefaultConnectionName string               `mapstructure:"dbDefault"` //默认连接名称
 	Db                    *DbStruct            //当前连接的数据
-	Connections           map[string]*DbStruct `mapstructure:"connections"` //所有连接的数据
+	Connections           map[string]*DbStruct `mapstructure:"dbConnections"` //所有连接的数据
 }
 
 var DBConnection = new(Dbs)
 
-func init() {
-	path, _ := os.Getwd()
-	viperModel := viper.New()
-	viperModel.SetDefault("charset", "utf8mb4")
-	//导入配置文件
-	viperModel.SetConfigType("yaml")
-	viperModel.SetConfigFile(path + "/config/database.yml")
-	//读取配置文件
-	err := viperModel.ReadInConfig()
-	if err != nil {
-		fmt.Println()
-		panic(fmt.Errorf("读取配置文件database数据与结构体转换失败:%s \n", err))
-
-	}
-	// 将读取的配置信息保存至全局变量Conf
-	if err := viperModel.Unmarshal(DBConnection); err != nil {
-		fmt.Println()
-		panic(fmt.Errorf("配置文件database数据与结构体转换失败:%s \n", err))
-	}
-
-	//判断默认连接是否配置
-	defaultData, ok := DBConnection.Connections[DBConnection.DefaultConnectionName]
-	if ok {
-		DBConnection.Db = createDB(defaultData)
-	}
-
-	for key, dbStruct := range DBConnection.Connections {
-		if key != DBConnection.DefaultConnectionName {
-			DBConnection.Connections[key] = createDB(dbStruct)
-		}
-	}
-}
+//func init() {
+//	path, _ := os.Getwd()
+//	viperModel := viper.New()
+//	viperModel.SetDefault("charset", "utf8mb4")
+//	//导入配置文件
+//	viperModel.SetConfigType("yaml")
+//	viperModel.SetConfigFile(path + "/config/database.yml")
+//	//读取配置文件
+//	err := viperModel.ReadInConfig()
+//	if err != nil {
+//		fmt.Println()
+//		panic(fmt.Errorf("读取配置文件database数据与结构体转换失败:%s \n", err))
+//
+//	}
+//	// 将读取的配置信息保存至全局变量Conf
+//	if err := viperModel.Unmarshal(DBConnection); err != nil {
+//		fmt.Println()
+//		panic(fmt.Errorf("配置文件database数据与结构体转换失败:%s \n", err))
+//	}
+//
+//	//判断默认连接是否配置
+//	defaultData, ok := DBConnection.Connections[DBConnection.DefaultConnectionName]
+//	if ok {
+//		DBConnection.Db = DBConnection.createDB(defaultData)
+//	}
+//
+//	for key, dbStruct := range DBConnection.Connections {
+//		if key != DBConnection.DefaultConnectionName {
+//			DBConnection.Connections[key] = DBConnection.createDB(dbStruct)
+//		}
+//	}
+//}
 
 // 创建DB
-func createDB(dbStruct *DbStruct) *DbStruct {
+func (r *Dbs) createDB(dbStruct *DbStruct) *DbStruct {
 	//默认字符编码
 	charset := "utf8mb4"
 	if dbStruct.Charset == "" {
 		dbStruct.Charset = charset
 	}
-	dsn := getDsn(dbStruct)
+	dsn := DBConnection.getDsn(dbStruct)
 	db, err := gorm.Open(mysql.Open(dsn), &gorm.Config{})
 	if err != nil {
 		fmt.Println()
@@ -100,14 +99,14 @@ func createDB(dbStruct *DbStruct) *DbStruct {
 			replicas := []gorm.Dialector{}
 			//读链接
 			for _, readDbStruct := range dbStruct.Read {
-				readDbStruct = setDefauleValue(readDbStruct, dbStruct)
-				replicasDsn := getDsn(readDbStruct)
+				readDbStruct = DBConnection.setDefauleValue(readDbStruct, dbStruct)
+				replicasDsn := DBConnection.getDsn(readDbStruct)
 				replicas = append(replicas, mysql.Open(replicasDsn))
 			}
 			//写链接
 			for _, writeDbStruct := range dbStruct.Write {
-				writeDbStruct = setDefauleValue(writeDbStruct, dbStruct)
-				sourcesDsn := getDsn(writeDbStruct)
+				writeDbStruct = DBConnection.setDefauleValue(writeDbStruct, dbStruct)
+				sourcesDsn := DBConnection.getDsn(writeDbStruct)
 				sources = append(sources, mysql.Open(sourcesDsn))
 			}
 			db.Use(dbresolver.Register(dbresolver.Config{
@@ -125,12 +124,12 @@ func createDB(dbStruct *DbStruct) *DbStruct {
 }
 
 // 生成连接dsn
-func getDsn(dbStruct *DbStruct) string {
+func (r *Dbs) getDsn(dbStruct *DbStruct) string {
 	return dbStruct.UserName + ":" + dbStruct.Password + "@tcp(" + dbStruct.Host + ":" + dbStruct.Port + ")/" + dbStruct.Database + "?charset=" + dbStruct.Charset + "&parseTime=True&loc=Asia%2FShanghai"
 }
 
 // 设置默认值
-func setDefauleValue(new, old *DbStruct) *DbStruct {
+func (r *Dbs) setDefauleValue(new, old *DbStruct) *DbStruct {
 	if new.Charset == "" {
 		new.Charset = old.Charset
 	}
@@ -159,4 +158,16 @@ func setDefauleValue(new, old *DbStruct) *DbStruct {
 		new.ConnMaxLifetime = old.ConnMaxLifetime
 	}
 	return new
+}
+
+// GetDB 获取DB连接
+func GetDB(name ...string) (*gorm.DB, error) {
+	if len(name) == 0 {
+		return DBConnection.Db.Connection, nil
+	} else {
+		if len(name) != 1 {
+			return nil, errors.New("请正确选择要获取的连接名称")
+		}
+		return DBConnection.Connections[name[0]].Connection, nil
+	}
 }

@@ -1,8 +1,8 @@
 #默认连接名称
-default: redis
+redisDefault: redis
 
 #连接对象
-connections:
+redisConnections:
   redis:
     name: test
     host: 127.0.0.1

@@ -1,8 +1,8 @@
 #默认连接名称
-default: mysql
+dbDefault: mysql
 
 #连接对象
-connections:
+dbConnections:
   mysql:
     name: test
     driver: mysql
@@ -17,11 +17,11 @@ connections:
     connMaxLifetime: 30
     read:
       - name: test2
-        host: 192.168.0.134
+        host: 172.21.80.1
         port: 33099
         database: test2
       - name: test3
-        host: 192.168.0.134
+        host: 172.21.80.1
         port: 33099
         database: test3
   mysql2:
@@ -39,10 +39,10 @@ connections:
     read:
       - name: readConnection
         port: 33099
-        host: 192.168.0.134
+        host: 172.21.80.1
         database: test4
     write:
       - name: writeConnection
         port: 33099
-        host: 192.168.0.134
+        host: 172.21.80.1
         database: test5
