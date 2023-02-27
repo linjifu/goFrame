@@ -9,16 +9,19 @@ import (
 
 func init() {
 	path, _ := os.Getwd()
-	viperEnv := viper.New()
-	viperEnv.SetConfigFile(path + "/.env")
-	envErr := viperEnv.ReadInConfig()
-	if envErr != nil {
-		fmt.Println()
-		panic(fmt.Errorf("读取配置文件.env文件失败:%s \n", envErr))
-	}
-	for i, k := range viperEnv.AllSettings() {
-		fmt.Println(i, "-", k)
-		os.Setenv(strings.ToUpper(i), k.(string))
+	_, envExistErr := os.Stat(path + "/.env")
+	if envExistErr == nil && !os.IsNotExist(envExistErr) {
+		viperEnv := viper.New()
+		viperEnv.SetConfigFile(path + "/.env")
+		envErr := viperEnv.ReadInConfig()
+		if envErr != nil {
+			fmt.Println()
+			panic(fmt.Errorf("读取配置文件.env文件失败:%s \n", envErr))
+		}
+		for i, k := range viperEnv.AllSettings() {
+			fmt.Println(i, "-", k)
+			os.Setenv(strings.ToUpper(i), k.(string))
+		}
 	}
 
 	//数据库配置读取==========================================================================================
