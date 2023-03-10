@@ -1,6 +1,5 @@
 #默认连接名称
 dbDefault: mysql
-
 #连接对象
 dbConnections:
   mysql:
@@ -15,34 +14,52 @@ dbConnections:
     maxIdleConns: 100
     maxOpenConns: 300
     connMaxLifetime: 30
-    read:
-      - name: test2
-        host: 172.21.80.1
-        port: 33099
-        database: test2
-      - name: test3
-        host: 172.21.80.1
-        port: 33099
-        database: test3
-  mysql2:
-    host: 127.0.0.1
-    name: testb
-    driver: mysql
-    port: 3308
-    userName: root
-    password: root
-    charset: utf8mb4
-    database: testb
-    maxIdleConns: 100
-    maxOpenConns: 300
-    connMaxLifetime: 30
-    read:
-      - name: readConnection
-        port: 33099
-        host: 172.21.80.1
-        database: test4
-    write:
-      - name: writeConnection
-        port: 33099
-        host: 172.21.80.1
-        database: test5
+
+##默认连接名称
+#dbDefault: mysql
+#
+##连接对象
+#dbConnections:
+#  mysql:
+#    name: test
+#    driver: mysql
+#    host: 127.0.0.1
+#    port: 3308
+#    userName: root
+#    password: root
+#    charset: utf8mb4
+#    database: test
+#    maxIdleConns: 100
+#    maxOpenConns: 300
+#    connMaxLifetime: 30
+#    read:
+#      - name: test2
+#        host: 172.21.80.1
+#        port: 33099
+#        database: test2
+#      - name: test3
+#        host: 172.21.80.1
+#        port: 33099
+#        database: test3
+#  mysql2:
+#    host: 127.0.0.1
+#    name: testb
+#    driver: mysql
+#    port: 3308
+#    userName: root
+#    password: root
+#    charset: utf8mb4
+#    database: testb
+#    maxIdleConns: 100
+#    maxOpenConns: 300
+#    connMaxLifetime: 30
+#    read:
+#      - name: readConnection
+#        port: 33099
+#        host: 172.21.80.1
+#        database: test4
+#    write:
+#      - name: writeConnection
+#        port: 33099
+#        host: 172.21.80.1
+#        database: test5

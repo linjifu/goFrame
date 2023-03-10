@@ -4,6 +4,9 @@ import (
 	"errors"
 	"fmt"
 	"github.com/gomodule/redigo/redis"
+	"github.com/spf13/viper"
+	"os"
+	"strings"
 	"time"
 )
 
@@ -18,7 +21,6 @@ type RedisStruct struct {
 	MaxIdleConns    int           `mapstructure:"maxIdleConns"`    //空闲连接池中连接的最大数量
 	MaxOpenConns    int           `mapstructure:"maxOpenConns"`    //打开数据库连接的最大数量
 	ConnMaxLifetime time.Duration `mapstructure:"connMaxLifetime"` //连接可复用的最大时间（秒）
-	Connection      redis.Conn    //真实连接
 	Pool            *redis.Pool   //连接池
 }
 
@@ -28,44 +30,55 @@ type Redises struct {
 	Connections           map[string]*RedisStruct `mapstructure:"redisConnections"` //所有连接的数据
 }
 
-var RedisConnection = new(Redises)
+func NewRedises() *Redises {
+	if redisConnection == nil {
+		redisConnection = &Redises{}
+		redisConnection.LoadRedis()
+	}
+	return redisConnection
+}
 
-//func init() {
-//	path, _ := os.Getwd()
-//	viperModel := viper.New()
-//	viperModel.SetDefault("charset", "utf8mb4")
-//	//导入配置文件
-//	viperModel.SetConfigType("yaml")
-//	viperModel.SetConfigFile(path + "/config/redis.yml")
-//	//读取配置文件
-//	err := viperModel.ReadInConfig()
-//	if err != nil {
-//		fmt.Println()
-//		panic(fmt.Errorf("读取配置文件redis数据与结构体转换失败:%s \n", err))
-//	}
-//	// 将读取的配置信息保存至全局变量Conf
-//	if err := viperModel.Unmarshal(RedisConnection); err != nil {
-//		fmt.Println()
-//		panic(fmt.Errorf("配置文件redis数据与结构体转换失败:%s \n", err))
-//	}
-//
-//	//判断默认连接是否配置
-//	defaultData, ok := RedisConnection.Connections[RedisConnection.DefaultConnectionName]
-//	if ok {
-//		RedisConnection.Redis = RedisConnection.createRedis(defaultData)
-//	}
-//
-//	for key, redisStruct := range RedisConnection.Connections {
-//		if key != RedisConnection.DefaultConnectionName {
-//			RedisConnection.Connections[key] = RedisConnection.createRedis(redisStruct)
-//		}
-//	}
-//}
+var redisConnection *Redises = nil
+
+func (r *Redises) LoadRedis() {
+	path, _ := os.Getwd()
+	viperRedis := viper.New()
+	//自动获取全部的env加入到viper中。（如果环境变量多就全部加进来）默认别名和环境变量名一致
+	viperRedis.AutomaticEnv()
+	//将加入的环境变量*_*_格式替换成 *.*格式
+	//（因为从环境变量读是按"a.b.c.d"的格式读取，所以要给在viper维护一个别名对象，给环境变量一个别名）
+	viperRedis.SetEnvKeyReplacer(strings.NewReplacer(".", "_"))
+	//导入配置文件
+	viperRedis.SetConfigType("yaml")
+	viperRedis.SetConfigFile(path + "/config/redis.yml")
+	//读取配置文件
+	redisErr := viperRedis.ReadInConfig()
+	if redisErr != nil {
+		fmt.Println()
+		panic(fmt.Errorf("读取配置文件redis文件失败:%s \n", redisErr))
+	}
+	// 将读取的配置信息保存至全局变量Conf
+	if redisErr2 := viperRedis.Unmarshal(redisConnection); redisErr2 != nil {
+		fmt.Println()
+		panic(fmt.Errorf("配置文件redis数据与结构体转换失败:%s \n", redisErr2))
+	}
+	//判断默认连接是否配置
+	defaultRedisData, ok := redisConnection.Connections[redisConnection.DefaultConnectionName]
+	if ok {
+		redisConnection.Redis = redisConnection.createRedis(defaultRedisData)
+	}
+
+	for key, redisStruct := range redisConnection.Connections {
+		if key != redisConnection.DefaultConnectionName {
+			redisConnection.Connections[key] = redisConnection.createRedis(redisStruct)
+		}
+	}
+}
 
 // 创建DB
 func (r *Redises) createRedis(redisStruct *RedisStruct) *RedisStruct {
 	//默认值设置
-	redisStruct = RedisConnection.setDefaultValue(redisStruct)
+	redisStruct = redisConnection.setDefaultValue(redisStruct)
 	//实例化一个连接池
 	pool := &redis.Pool{
 		MaxIdle:     redisStruct.MaxIdleConns,    //最初的连接数量
@@ -81,7 +94,7 @@ func (r *Redises) createRedis(redisStruct *RedisStruct) *RedisStruct {
 		},
 	}
 
-	redisStruct.Connection = pool.Get()
+	redisStruct.Pool = pool
 
 	fmt.Println(redisStruct.Name + "-redis链接成功")
 
@@ -105,26 +118,14 @@ func (r *Redises) setDefaultValue(redisStruct *RedisStruct) *RedisStruct {
 	return redisStruct
 }
 
-// GetRedis 获取redis连接
-func GetRedis(name ...string) (redis.Conn, error) {
-	if len(name) == 0 {
-		return RedisConnection.Redis.Connection, nil
-	} else {
-		if len(name) != 1 {
-			return nil, errors.New("请正确选择要获取的连接名称")
-		}
-		return RedisConnection.Connections[name[0]].Connection, nil
-	}
-}
-
 // GetRedisPool 获取redis连接池
 func GetRedisPool(name ...string) (*redis.Pool, error) {
 	if len(name) == 0 {
-		return RedisConnection.Redis.Pool, nil
+		return redisConnection.Redis.Pool, nil
 	} else {
 		if len(name) != 1 {
 			return nil, errors.New("请正确选择要获取的连接池名称")
 		}
-		return RedisConnection.Connections[name[0]].Pool, nil
+		return redisConnection.Connections[name[0]].Pool, nil
 	}
 }

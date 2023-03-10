@@ -3,9 +3,12 @@ package Tools
 import (
 	"errors"
 	"fmt"
+	"github.com/spf13/viper"
 	"gorm.io/driver/mysql"
 	"gorm.io/gorm"
 	"gorm.io/plugin/dbresolver"
+	"os"
+	"strings"
 	"time"
 )
 
@@ -33,40 +36,54 @@ type Dbs struct {
 	Connections           map[string]*DbStruct `mapstructure:"dbConnections"` //所有连接的数据
 }
 
-var DBConnection = new(Dbs)
+func NewDbs() *Dbs {
+	if dbConnection == nil {
+		dbConnection = &Dbs{}
+		dbConnection.LoadMysql()
+	}
+	return dbConnection
+}
 
-//func init() {
-//	path, _ := os.Getwd()
-//	viperModel := viper.New()
-//	viperModel.SetDefault("charset", "utf8mb4")
-//	//导入配置文件
-//	viperModel.SetConfigType("yaml")
-//	viperModel.SetConfigFile(path + "/config/database.yml")
-//	//读取配置文件
-//	err := viperModel.ReadInConfig()
-//	if err != nil {
-//		fmt.Println()
-//		panic(fmt.Errorf("读取配置文件database数据与结构体转换失败:%s \n", err))
-//
-//	}
-//	// 将读取的配置信息保存至全局变量Conf
-//	if err := viperModel.Unmarshal(DBConnection); err != nil {
-//		fmt.Println()
-//		panic(fmt.Errorf("配置文件database数据与结构体转换失败:%s \n", err))
-//	}
-//
-//	//判断默认连接是否配置
-//	defaultData, ok := DBConnection.Connections[DBConnection.DefaultConnectionName]
-//	if ok {
-//		DBConnection.Db = DBConnection.createDB(defaultData)
-//	}
-//
-//	for key, dbStruct := range DBConnection.Connections {
-//		if key != DBConnection.DefaultConnectionName {
-//			DBConnection.Connections[key] = DBConnection.createDB(dbStruct)
-//		}
-//	}
-//}
+var dbConnection *Dbs = nil
+
+func (r *Dbs) LoadMysql() {
+	path, _ := os.Getwd()
+	viperDatabase := viper.New()
+	viperDatabase.SetDefault("charset", "utf8mb4")
+	//自动获取全部的env加入到viper中。（如果环境变量多就全部加进来）默认别名和环境变量名一致
+	viperDatabase.AutomaticEnv()
+	//将加入的环境变量*_*_格式替换成 *.*格式
+	//（因为从环境变量读是按"a.b.c.d"的格式读取，所以要给在viper维护一个别名对象，给环境变量一个别名）
+	viperDatabase.SetEnvKeyReplacer(strings.NewReplacer(".", "_"))
+	//导入配置文件
+	viperDatabase.SetConfigType("yaml")
+	viperDatabase.SetConfigFile(path + "/config/database.yml")
+	//读取配置文件
+	err := viperDatabase.ReadInConfig()
+	if err != nil {
+		fmt.Println()
+		panic(fmt.Errorf("读取配置文件database文件失败:%s \n", err))
+	}
+	// 将读取的配置信息保存至全局变量Conf
+	if err2 := viperDatabase.Unmarshal(dbConnection); err2 != nil {
+		fmt.Println()
+		panic(fmt.Errorf("配置文件database数据与结构体转换失败:%s \n", err2))
+	}
+	//判断默认连接是否配置
+	defaultDBData, ok := dbConnection.Connections[dbConnection.DefaultConnectionName]
+	if ok {
+		dbConnection.Db = dbConnection.createDB(defaultDBData)
+	}
+
+	for key, dbStruct := range dbConnection.Connections {
+		if key != dbConnection.DefaultConnectionName {
+			dbConnection.Connections[key] = dbConnection.createDB(dbStruct)
+		}
+	}
+	//for i, k := range viperDatabase.AllSettings() {
+	//	fmt.Println(i, "-", k)
+	//}
+}
 
 // 创建DB
 func (r *Dbs) createDB(dbStruct *DbStruct) *DbStruct {
@@ -75,7 +92,7 @@ func (r *Dbs) createDB(dbStruct *DbStruct) *DbStruct {
 	if dbStruct.Charset == "" {
 		dbStruct.Charset = charset
 	}
-	dsn := DBConnection.getDsn(dbStruct)
+	dsn := dbConnection.getDsn(dbStruct)
 	db, err := gorm.Open(mysql.Open(dsn), &gorm.Config{})
 	if err != nil {
 		fmt.Println()
@@ -99,14 +116,14 @@ func (r *Dbs) createDB(dbStruct *DbStruct) *DbStruct {
 			replicas := []gorm.Dialector{}
 			//读链接
 			for _, readDbStruct := range dbStruct.Read {
-				readDbStruct = DBConnection.setDefauleValue(readDbStruct, dbStruct)
-				replicasDsn := DBConnection.getDsn(readDbStruct)
+				readDbStruct = dbConnection.setDefauleValue(readDbStruct, dbStruct)
+				replicasDsn := dbConnection.getDsn(readDbStruct)
 				replicas = append(replicas, mysql.Open(replicasDsn))
 			}
 			//写链接
 			for _, writeDbStruct := range dbStruct.Write {
-				writeDbStruct = DBConnection.setDefauleValue(writeDbStruct, dbStruct)
-				sourcesDsn := DBConnection.getDsn(writeDbStruct)
+				writeDbStruct = dbConnection.setDefauleValue(writeDbStruct, dbStruct)
+				sourcesDsn := dbConnection.getDsn(writeDbStruct)
 				sources = append(sources, mysql.Open(sourcesDsn))
 			}
 			db.Use(dbresolver.Register(dbresolver.Config{
@@ -163,11 +180,11 @@ func (r *Dbs) setDefauleValue(new, old *DbStruct) *DbStruct {
 // GetDB 获取DB连接
 func GetDB(name ...string) (*gorm.DB, error) {
 	if len(name) == 0 {
-		return DBConnection.Db.Connection, nil
+		return dbConnection.Db.Connection, nil
 	} else {
 		if len(name) != 1 {
 			return nil, errors.New("请正确选择要获取的连接名称")
 		}
-		return DBConnection.Connections[name[0]].Connection, nil
+		return dbConnection.Connections[name[0]].Connection, nil
 	}
 }
