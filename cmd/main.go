@@ -6,37 +6,11 @@ import (
 	"github.com/spf13/viper"
 	"goFrame/app/Tools"
 	"goFrame/cmd/Api"
+	"goFrame/cmd/Artisan"
+	"goFrame/cmd/Schedule"
 	"os"
 	"strings"
 )
-
-func init() {
-	// 环境变量载入
-	loadEnv()
-	// MySql载入
-	Tools.NewDbs()
-	// Redis载入
-	Tools.NewRedises()
-}
-
-func main() {
-	// 命令行根，用于后续新增新的命令行
-	rootCmd := &cobra.Command{
-		Use:   "Hello World",
-		Short: "您好，世界！",
-		Long:  `启动程序默认命令`,
-		Run: func(cmd *cobra.Command, args []string) {
-			fmt.Println("Hello World")
-		},
-	}
-	// 增加Api模块
-	rootCmd.AddCommand(Api.NewApi().Cmd())
-	// 启动程序
-	if err := rootCmd.Execute(); err != nil {
-		fmt.Fprintln(os.Stderr, err)
-		os.Exit(1)
-	}
-}
 
 // 环境变量载入
 func loadEnv() {
@@ -54,5 +28,43 @@ func loadEnv() {
 			fmt.Println(i, "-", k)
 			os.Setenv(strings.ToUpper(i), k.(string))
 		}
+	}
+}
+
+var rootCmd = &cobra.Command{
+	Use:   os.Getenv("APP_NAME"),
+	Short: "主程序",
+	Long:  `主程序` + os.Getenv("APP_NAME") + `启动入口`,
+	Run: func(cmd *cobra.Command, args []string) {
+		fmt.Println("主程序：", os.Getenv("APP_NAME"), "启动成功！")
+	},
+}
+
+// addModelCmd 统一新增项目模块的启动命令
+func addModelCmd() {
+	// 增加Api模块
+	rootCmd.AddCommand(Api.NewApi().Cmd())
+	// 增加定时计划器模块
+	rootCmd.AddCommand(Schedule.NewSchedule().Cmd())
+	// 自定义artisan命令模块
+	rootCmd.AddCommand(Artisan.NewArtisan().Cmd())
+}
+
+func init() {
+	// 环境变量载入
+	loadEnv()
+	// MySql载入
+	Tools.NewDbs()
+	// Redis载入
+	Tools.NewRedises()
+}
+
+func main() {
+	//增加项目模块
+	addModelCmd()
+	// 启动程序
+	if err := rootCmd.Execute(); err != nil {
+		fmt.Fprintln(os.Stderr, err)
+		os.Exit(1)
 	}
 }

@@ -7,6 +7,7 @@ import (
 	"goFrame/app/Http/Middleware"
 	"goFrame/app/Tools"
 	"goFrame/routes"
+	"os"
 )
 
 type Api struct {
@@ -28,6 +29,16 @@ func (a Api) Cmd() *cobra.Command {
 }
 
 func (a *Api) run() {
+
+	//环境
+	if os.Getenv("APP_ENV") == "production" {
+		gin.SetMode(gin.ReleaseMode)
+	} else if os.Getenv("APP_ENV") == "test" {
+		gin.SetMode(gin.TestMode)
+	} else {
+		gin.SetMode(gin.DebugMode)
+	}
+
 	//框架初始化
 	r := gin.Default()
 	//载入中间件
@@ -39,7 +50,9 @@ func (a *Api) run() {
 	//载入路由
 	routes.LoadApi(r)
 
-	if err := r.Run(); err != nil {
+	if err := r.Run(":" + os.Getenv("APP_PORT")); err != nil {
 		fmt.Printf("Api服务启动失败:%v\n", err)
 	}
+
+	fmt.Println("Api服务启动成功")
 }
