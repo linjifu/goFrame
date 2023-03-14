@@ -50,7 +50,12 @@ func (a *Api) run() {
 	//载入路由
 	routes.LoadApi(r)
 
-	if err := r.Run(":" + os.Getenv("APP_PORT")); err != nil {
+	port := os.Getenv("APP_PORT")
+	if len(port) == 0 {
+		port = "8080"
+	}
+
+	if err := r.Run(":" + port); err != nil {
 		fmt.Printf("Api服务启动失败:%v\n", err)
 	}
 
