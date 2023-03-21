@@ -9,7 +9,7 @@ redisConnections:
     port: 6379
     userName: root
     password:
-    database: 7
+    database: 0
     maxIdleConns: 10
     maxOpenConns: 300
     connMaxLifetime: 300

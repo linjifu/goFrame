@@ -7,6 +7,7 @@ import (
 	"goFrame/app/Tools"
 	"goFrame/cmd/Api"
 	"goFrame/cmd/Artisan"
+	"goFrame/cmd/Queue"
 	"goFrame/cmd/Schedule"
 	"os"
 	"strings"
@@ -48,6 +49,8 @@ func addModelCmd() {
 	rootCmd.AddCommand(Schedule.NewSchedule().Cmd())
 	// 自定义artisan命令模块
 	rootCmd.AddCommand(Artisan.NewArtisan().Cmd())
+	// 队列模块
+	rootCmd.AddCommand(Queue.NewQueue().Cmd())
 }
 
 func init() {
@@ -60,6 +63,12 @@ func init() {
 }
 
 func main() {
+
+	a := new(Tools.AsyncQueue)
+	a.Serialize(func() error {
+		return nil
+	}, nil)
+
 	//增加项目模块
 	addModelCmd()
 	// 启动程序
