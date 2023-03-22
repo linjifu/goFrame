@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
+	"goFrame/app/Jobs"
 	"goFrame/app/Tools"
 	"goFrame/cmd/Api"
 	"goFrame/cmd/Artisan"
@@ -63,12 +64,8 @@ func init() {
 }
 
 func main() {
-
-	a := new(Tools.AsyncQueue)
-	a.Serialize(func() error {
-		return nil
-	}, nil)
-
+	Tools.NewAsyncQueue("a").PushBack(Jobs.NewTestJob("测试队列", nil))
+	Tools.NewAsyncQueue("a").PushBack(Jobs.NewTestJob2("测试队列2", nil))
 	//增加项目模块
 	addModelCmd()
 	// 启动程序

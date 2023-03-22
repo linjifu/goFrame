@@ -2,8 +2,8 @@ package Tools
 
 import (
 	"encoding/json"
-	"fmt"
 	"github.com/gomodule/redigo/redis"
+	"goFrame/app/Jobs"
 )
 
 type Job interface {
@@ -29,12 +29,24 @@ func (q *AsyncQueue) serialize(job Job) (string, error) {
 }
 
 func (q *AsyncQueue) deserialize(data string) (Job, error) {
-	var job Job
-	err := json.Unmarshal([]byte(data), &job)
-	if err != nil {
-		return nil, err
+	queueList := q.queueList()
+	jobMap, ok := queueList[q.name]
+	if ok {
+		err := json.Unmarshal([]byte(data), jobMap)
+		if err != nil {
+			return nil, err
+		}
 	}
-	return job, nil
+	return jobMap, nil
+}
+
+func (q *AsyncQueue) queueList() map[string]Job {
+	queueMap := make(map[string]Job, 1)
+
+	queueMap["a"] = new(Jobs.TestJob)
+	queueMap["b"] = new(Jobs.TestJob2)
+
+	return queueMap
 }
 
 func (q *AsyncQueue) PushBack(job Job) error {
@@ -62,7 +74,6 @@ func (q *AsyncQueue) PushFront(job Job) error {
 
 	data, err := q.serialize(job)
 	if err != nil {
-		fmt.Println(err)
 		return err
 	}
 
@@ -74,23 +85,19 @@ func (q *AsyncQueue) PushFront(job Job) error {
 	return nil
 }
 
-func (q *AsyncQueue) Pop() (Job, error) {
-	fmt.Println("监听到了123")
+func (q *AsyncQueue) Pop() (bool, error) {
 	redisPool, _ := GetRedisPool()
 	conn := redisPool.Get()
 	defer conn.Close()
 
-	data, err := redis.String(conn.Do("BLPOP", q.name, 0))
+	data, err := redis.String(conn.Do("LPOP", q.name))
 	if err != nil {
-		return nil, err
+		return false, err
 	}
 
 	job, err := q.deserialize(data)
 	if err != nil {
-		return nil, err
+		return false, err
 	}
-	job.Run()
-	fmt.Printf("执行了队列%T，%t", job, job)
-
-	return job, nil
+	return job.Run()
 }

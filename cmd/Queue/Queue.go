@@ -41,12 +41,14 @@ func (q *Queue) run() {
 				for _, queueName := range tempQueueList {
 					if _, ok := queueList[queueName]; !ok {
 						//启动队列
-						go func() {
-							//AsyncQueue := Tools.NewAsyncQueue(queueName)
-							//for {
-							//	AsyncQueue.Pop()
-							//}
-						}()
+						go func(qName string) {
+							AsyncQueue := Tools.NewAsyncQueue(qName)
+							for {
+								AsyncQueue.Pop()
+								//延时1秒钟执行一次
+								time.Sleep(1 * time.Second)
+							}
+						}(queueName)
 						//放入已启动列表
 						queueList[queueName] = 1
 						fmt.Println("队列【" + queueName + "】已启动监听")
