@@ -45,6 +45,7 @@ func (a *Api) run() {
 	r.NoMethod(Tools.HandleNotFound)
 	r.NoRoute(Tools.HandleNotFound)
 	//全局异常中间件
+	r.Use(Middleware.AccessLog())
 	r.Use(Middleware.ErrHandler())
 
 	//载入路由

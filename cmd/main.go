@@ -60,9 +60,12 @@ func init() {
 	Tools.NewDbs()
 	// Redis载入
 	Tools.NewRedises()
+	// 日志载入
+	Tools.NewLogger()
 }
 
 func main() {
+	Tools.Log.AccessLog.Info("测试")
 	//Tools.NewAsyncQueue("a").PushBack(Jobs.NewTestJob("测试队列", nil))
 	//Tools.NewAsyncQueue("a").PushBack(Jobs.NewTestJob2("测试队列2", nil))
 	//增加项目模块

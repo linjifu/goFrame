@@ -3,6 +3,7 @@ package Tools
 import (
 	"github.com/gin-gonic/gin"
 	"net/http"
+	"time"
 )
 
 type ExceptionHandle struct {
@@ -54,6 +55,33 @@ var (
 
 // 404处理
 func HandleNotFound(c *gin.Context) {
+
+	beginTime := time.Now().UnixNano()
+	c.Next()
+	endTime := time.Now().UnixNano()
+	duration := endTime - beginTime
+
+	s := "%s %s \"%s %s\" " +
+		"%s %d %d %dµs " +
+		"\"%s\""
+
+	layout := "2006-01-02 15:04:05"
+	timeNow := time.Now().Format(layout)
+
+	Tools.Log.AccessLog.Infof(s,
+		Tools.GetRealIp(c),
+		timeNow,
+		c.Request.Method,
+		c.Request.RequestURI,
+		c.Request.Proto,
+		bodyWriter.Status(),
+		bodyWriter.body.Len(),
+		duration/1000,
+		c.Request.Header.Get("User-Agent"),
+	)
+
+	defer Tools.Log.AccessLog.Sync()
+
 	err := NotFound
 	c.JSON(err.StatusCode, err)
 	return
