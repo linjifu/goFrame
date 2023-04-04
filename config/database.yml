@@ -6,7 +6,7 @@ dbConnections:
     name: test
     driver: mysql
     host: 127.0.0.1
-    port: 3308
+    port: 3380
     userName: root
     password: root
     charset: utf8mb4

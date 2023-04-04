@@ -1,3 +1,2 @@
-2023-03-31T16:35:21.443+0800	INFO	cmd/main.go:68	测试
-2023-03-31T16:35:54.921+0800	INFO	cmd/main.go:68	测试
-{"level":"INFO","ts":"2023-03-31T16:39:31.135+0800","caller":"cmd/main.go:68","msg":"测试"}
+{"level":"INFO","ts":"2023-04-04T20:28:43.459+0800","caller":"Middleware/AccessLogWriter.go:39","msg":"::1 2023-04-04 20:28:43 \"GET /v1/index\" HTTP/1.1 200 53 114µs \"PostmanRuntime/7.29.0\""}
+{"level":"INFO","ts":"2023-04-04T20:30:43.966+0800","caller":"Middleware/AccessLogWriter.go:39","msg":"::1 2023-04-04 20:30:43 \"GET /v1/indexddd\" HTTP/1.1 404 30 332µs \"PostmanRuntime/7.29.0\""}

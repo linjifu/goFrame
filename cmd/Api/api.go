@@ -41,11 +41,13 @@ func (a *Api) run() {
 
 	//框架初始化
 	r := gin.Default()
-	//载入中间件
-	r.NoMethod(Tools.HandleNotFound)
+	//找不到路由404中间件
 	r.NoRoute(Tools.HandleNotFound)
-	//全局异常中间件
+	//找不到方法404中间件
+	r.NoMethod(Tools.HandleNotFound)
+	//请求日志中间件
 	r.Use(Middleware.AccessLog())
+	//全局异常中间件
 	r.Use(Middleware.ErrHandler())
 
 	//载入路由

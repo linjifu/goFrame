@@ -25,6 +25,7 @@ func AccessLog() gin.HandlerFunc {
 		c.Writer = bodyWriter
 
 		beginTime := time.Now().UnixNano()
+		c.Next()
 		endTime := time.Now().UnixNano()
 		duration := endTime - beginTime
 

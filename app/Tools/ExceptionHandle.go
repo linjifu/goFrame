@@ -56,31 +56,25 @@ var (
 // 404处理
 func HandleNotFound(c *gin.Context) {
 
-	beginTime := time.Now().UnixNano()
-	c.Next()
-	endTime := time.Now().UnixNano()
-	duration := endTime - beginTime
-
 	s := "%s %s \"%s %s\" " +
-		"%s %d %d %dµs " +
+		"%s %d %s " +
 		"\"%s\""
 
 	layout := "2006-01-02 15:04:05"
 	timeNow := time.Now().Format(layout)
 
-	Tools.Log.AccessLog.Infof(s,
-		Tools.GetRealIp(c),
+	Log.ErrorLog.Errorf(s,
+		GetRealIp(c),
 		timeNow,
 		c.Request.Method,
 		c.Request.RequestURI,
 		c.Request.Proto,
-		bodyWriter.Status(),
-		bodyWriter.body.Len(),
-		duration/1000,
+		404,
+		"找不到路由或者方法",
 		c.Request.Header.Get("User-Agent"),
 	)
 
-	defer Tools.Log.AccessLog.Sync()
+	defer Log.ErrorLog.Sync()
 
 	err := NotFound
 	c.JSON(err.StatusCode, err)
